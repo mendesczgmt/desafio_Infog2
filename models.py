@@ -78,17 +78,17 @@ class Produto:
 class ItensPedido:
     __tablename__ = "itens_pedidos"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
     
-    pedido_id: Mapped[int] = mapped_column(ForeignKey("pedidos.id"))
+    pedido_id: Mapped[int] = mapped_column(ForeignKey("pedidos.id"), nullable=True)
     produto_id: Mapped[int] = mapped_column(ForeignKey("produtos.id"))
     
-    quantity: Mapped[int] = mapped_column()
-    price: Mapped[float] = mapped_column()
+    quantidade: Mapped[int] = mapped_column()
+    preco: Mapped[float] = mapped_column()
 
     pedido: Mapped["Pedido"] = relationship(
         "Pedido",
-        back_populates="items",
+        back_populates="itens",
         init=False
     )
 
@@ -96,7 +96,7 @@ class ItensPedido:
 class Pedido:
     __tablename__ = "pedidos"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
     cliente_id: Mapped[str] = mapped_column(ForeignKey("clients.id"))
     status: Mapped[str] = mapped_column(String)
 
@@ -107,13 +107,12 @@ class Pedido:
         init=False, server_default=func.now(), onupdate=func.now()
     )
 
-    items: Mapped[list["ItensPedido"]] = relationship(
+    itens: Mapped[list["ItensPedido"]] = relationship(
         "ItensPedido",
         back_populates="pedido",
         init=False
     )
+    preco_total: Mapped[float] = mapped_column()
     deleted: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default='false'
     )
-
-    

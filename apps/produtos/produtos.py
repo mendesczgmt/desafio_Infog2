@@ -7,6 +7,7 @@ from typing import Optional
 from database import get_session
 from models import Produto
 from helpers.validacao import verificar_campos_obrigatorios
+from helpers.security import verificar_token
 
 router = APIRouter()
 
@@ -18,8 +19,9 @@ def listar_produtos(
     disponibilidade: Optional[bool] = Query(None),
     limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
-    session: Session = Depends(get_session)
-):
+    session: Session = Depends(get_session),
+    usuario: str = Depends(verificar_token)
+    ):
     """
     Lista produtos com filtros opcionais.
 
@@ -30,6 +32,8 @@ def listar_produtos(
     - limit (int): Quantidade máxima de resultados.
     - offset (int): Deslocamento inicial.
     - session (Session): Sessão do banco de dados.
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com lista de produtos e metadados.
@@ -75,6 +79,7 @@ def listar_produtos(
     response = {
         "status": "success",
         "message": "Produtos encontrados com sucesso.",
+        "usuario": usuario,
         "total": len(produtos),
         "produtos": produtos
     }
@@ -83,13 +88,15 @@ def listar_produtos(
 
 
 @router.get("/{id}")
-def buscar_produto_por_id(id: int, session: Session = Depends(get_session)):
+def buscar_produto_por_id(id: int, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Busca um produto pelo ID.
 
     Parâmetros:
     - id (int): ID do produto.
     - session (Session): Sessão do banco de dados.
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com os dados do produto.
@@ -111,6 +118,7 @@ def buscar_produto_por_id(id: int, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Produto encontrado com sucesso.",
+        "usuario": usuario,
         "produto": {
             "id": db_produto.id,
             "descricao": db_produto.descricao,
@@ -128,13 +136,15 @@ def buscar_produto_por_id(id: int, session: Session = Depends(get_session)):
 
 
 @router.post("/")
-def criar_produto(body: dict, session: Session = Depends(get_session)):
+def criar_produto(body: dict, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Cria um novo produto.
 
     Parâmetros:
     - body (dict): Dados do produto.
     - session (Session): Sessão do banco de dados.
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com dados do produto criado.
@@ -177,6 +187,7 @@ def criar_produto(body: dict, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Produto cadastrado com sucesso.",
+        "usuario": usuario,
         "produto": {
             "id": db_produto.id,
             "descricao": db_produto.descricao,
@@ -194,7 +205,7 @@ def criar_produto(body: dict, session: Session = Depends(get_session)):
 
 
 @router.put("/{id}")
-def atualizar_produto(id: int, body: dict, session: Session = Depends(get_session)):
+def atualizar_produto(id: int, body: dict, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Atualiza um produto existente.
 
@@ -202,6 +213,8 @@ def atualizar_produto(id: int, body: dict, session: Session = Depends(get_sessio
     - id (int): ID do produto.
     - body (dict): Dados para atualização.
     - session (Session): Sessão do banco de dados.
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com dados do produto atualizado.
@@ -243,6 +256,7 @@ def atualizar_produto(id: int, body: dict, session: Session = Depends(get_sessio
     response = {
         "status": "success",
         "message": "Produto alterado com sucesso.",
+        "usuario": usuario,
         "produto": {
             "id": db_produto.id,
             "descricao": db_produto.descricao,
@@ -260,13 +274,15 @@ def atualizar_produto(id: int, body: dict, session: Session = Depends(get_sessio
 
 
 @router.delete("/{id}")
-def deletar_produto(id: int, session: Session = Depends(get_session)):
+def deletar_produto(id: int, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Deleta (soft delete) um produto pelo ID.
 
     Parâmetros:
     - id (int): ID do produto.
     - session (Session): Sessão do banco de dados.
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com dados do produto deletado.
@@ -291,6 +307,7 @@ def deletar_produto(id: int, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Produto deletado com sucesso.",
+        "usuario": usuario,
         "produto": {
             "id": db_produto.id,
             "descricao": db_produto.descricao,

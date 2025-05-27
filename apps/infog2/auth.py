@@ -1,12 +1,18 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from datetime import timedelta
+from jose import JWTError, jwt
+
 
 from database import get_session
 from models import User
-from helpers.security import get_senha_hash, verificar_senha
+from helpers.security import (
+    get_senha_hash, verificar_senha,
+    criar_token_acesso,
+    SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, oauth2_scheme)
 from helpers.validacao import verificar_campos_obrigatorios
 
 router = APIRouter()
@@ -53,9 +59,15 @@ def realizar_login(body: dict, session: Session = Depends(get_session)):
             detail="Senha inserida está incorreta!"
         )
 
+    access_token = criar_token_acesso(
+        data={"sub": db_user.username}
+    )
+
     response = {
         "status": "success",
-        "message": "Login realizado com sucesso!"
+        "message": "Login realizado com sucesso!",
+        "access_token": access_token,
+        "token_type": "bearer"
     }
 
     return JSONResponse(content=response, status_code=200)
@@ -117,3 +129,41 @@ def registrar_usuario(body: dict, session: Session = Depends(get_session)):
     }
 
     return JSONResponse(content=response, status_code=200)
+
+
+@router.post("/refresh-token")
+def refresh_token(refresh_token: str = Depends(oauth2_scheme)):
+    """
+    Endpoint para gerar um novo access token a partir de um refresh token válido.
+    
+    Args:
+        refresh_token (str): Token JWT de refresh.
+    
+    Returns:
+        dict: Novo token de acesso (access token) e o token de refresh (opcional).
+    """
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Refresh token inválido"
+            )
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token inválido"
+        )
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = criar_token_acesso(
+        data={"sub": username},
+        expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }

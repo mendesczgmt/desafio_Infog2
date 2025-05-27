@@ -7,6 +7,8 @@ from typing import Optional
 from database import get_session
 from models import Client
 from helpers.validacao import verificar_campos_obrigatorios
+from helpers.security import verificar_token
+
 
 router = APIRouter()
 
@@ -17,8 +19,8 @@ def buscar_clientes(
     email: Optional[str] = Query(None),
     limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
-    session: Session = Depends(get_session)
-):
+    session: Session = Depends(get_session),
+    usuario: str = Depends(verificar_token)):
     """
     Busca uma lista de clientes com filtros opcionais.
 
@@ -28,6 +30,8 @@ def buscar_clientes(
     - limit (int, padrão=10): Quantidade máxima de registros retornados.
     - offset (int, padrão=0): Ponto de partida para a busca.
     - session (Session): Sessão do banco de dados (injeção de dependência).
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com status, mensagem, quantidade total e lista de clientes.
@@ -64,6 +68,7 @@ def buscar_clientes(
     
     response = {
         "status": "success",
+        "usuario": usuario,
         "message": "Clientes encontrados com sucesso.",
         "total": len(clientes),
         "clientes": clientes
@@ -73,13 +78,15 @@ def buscar_clientes(
 
 
 @router.get("/{id}")
-def buscar_cliente_por_id(id: int, session: Session = Depends(get_session)):
+def buscar_cliente_por_id(id: int, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Busca um cliente pelo ID.
 
     Parâmetros:
     - id (int): ID do cliente a ser buscado.
     - session (Session): Sessão do banco de dados (injeção de dependência).
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com status, mensagem e dados do cliente.
@@ -100,6 +107,7 @@ def buscar_cliente_por_id(id: int, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Cliente encontrado com sucesso.",
+        "usuario": usuario,
         "cliente": {
             "id": db_client.id,
             "email": db_client.email,
@@ -112,13 +120,15 @@ def buscar_cliente_por_id(id: int, session: Session = Depends(get_session)):
 
 
 @router.post("/")
-def criar_cliente(body: dict, session: Session = Depends(get_session)):
+def criar_cliente(body: dict, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Cria um novo cliente, validando campos obrigatórios e duplicidade.
 
     Parâmetros:
     - body (dict): Dados do cliente contendo 'email', 'cpf' e 'nome'.
     - session (Session): Sessão do banco de dados (injeção de dependência).
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com status, mensagem e dados do cliente criado.
@@ -161,6 +171,7 @@ def criar_cliente(body: dict, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Cliente cadastrado com sucesso.",
+        "usuario": usuario,
         "cliente": {
             "id": db_client.id,
             "email": db_client.email,
@@ -173,7 +184,8 @@ def criar_cliente(body: dict, session: Session = Depends(get_session)):
 
 
 @router.put("/{id}")
-def atualizar_cliente(id: int, body: dict, session: Session = Depends(get_session)):
+def atualizar_cliente(id: int, body: dict, session: Session = Depends(get_session),
+                      usuario: str = Depends(verificar_token)):
     """
     Atualiza os dados de um cliente existente.
 
@@ -181,6 +193,8 @@ def atualizar_cliente(id: int, body: dict, session: Session = Depends(get_sessio
     - id (int): ID do cliente a ser atualizado.
     - body (dict): Dados que devem ser atualizados.
     - session (Session): Sessão do banco de dados (injeção de dependência).
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com status, mensagem e dados do cliente atualizado.
@@ -236,6 +250,7 @@ def atualizar_cliente(id: int, body: dict, session: Session = Depends(get_sessio
     response = {
         "status": "success",
         "message": "Cliente alterado com sucesso.",
+        "usuario": usuario,
         "cliente": {
             "id": db_client.id,
             "email": db_client.email,
@@ -248,13 +263,15 @@ def atualizar_cliente(id: int, body: dict, session: Session = Depends(get_sessio
 
 
 @router.delete("/{id}")
-def deletar_cliente(id: int, session: Session = Depends(get_session)):
+def deletar_cliente(id: int, session: Session = Depends(get_session), usuario: str = Depends(verificar_token)):
     """
     Deleta (soft delete) um cliente existente.
 
     Parâmetros:
     - id (int): ID do cliente a ser deletado.
     - session (Session): Sessão do banco de dados (injeção de dependência).
+    - usuario (str): Nome de usuário injetado automaticamente via Depends(verificar_token).
+        Garante que apenas usuários autenticados possam acessar este endpoint.
 
     Retorna:
     - JSONResponse com status, mensagem e dados do cliente deletado.
@@ -279,6 +296,7 @@ def deletar_cliente(id: int, session: Session = Depends(get_session)):
     response = {
         "status": "success",
         "message": "Cliente deletado com sucesso.",
+        "usuario": usuario,
         "cliente": {
             "id": db_client.id,
             "email": db_client.email,
